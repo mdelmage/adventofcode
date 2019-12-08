@@ -12,12 +12,19 @@ def password_acceptable(password):
     digits.reverse()
 
     # Criteria 1: Two digits are the same
+    # and NOT part of a larger match group
+
+    # First, find all triplets ("111", "444", etc.)
+    triplets = {}
+    for i in range(len(digits) - 2):
+        if (digits[i] == digits[i + 1]) and (digits[i + 1] == digits[i + 2]):
+            if digits[i] not in triplets: triplets[digits[i]] = 1
+
+    # Now find pairs that aren't triples
     adjacent_match = False
     for i in range(len(digits) - 1):
-        if digits[i] == digits[i + 1]:
+        if (digits[i] == digits[i + 1]) and (digits[i] not in triplets):
             adjacent_match = True
-            break
-
     if not adjacent_match: return False
         
 
@@ -37,5 +44,4 @@ viable_passwords = 0
 for password in range(PW_MIN, PW_MAX + 1):
     if password_acceptable(password):
         viable_passwords += 1
-
 print "{0} passwords between {1}-{2} meet criteria.".format(viable_passwords, PW_MIN, PW_MAX)
