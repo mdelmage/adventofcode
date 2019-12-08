@@ -11,8 +11,27 @@ dirs = { "U" : (0,  1),
 def zero_manhattan_distance(loc):
     return abs(loc[0]) + abs(loc[1])
 
+
+def electrical_distance(wire, target_loc):
+    elec_dist = 0
+    loc = (0, 0)
+
+    for instruction in wire:
+        # Where are we going and how far?
+        dist = int(instruction[1:])
+        delta = dirs[instruction[0]]
+
+        for i in range(dist):
+            loc = (loc[0] + delta[0], loc[1] + delta[1])
+            elec_dist += 1
+
+            if loc == target_loc:
+                return elec_dist
+
+
 def unroll_wire(wire, value):
     loc = (0, 0)
+
     for instruction in wire:
         # Where are we going and how far?
         dist = int(instruction[1:])
@@ -25,6 +44,7 @@ def unroll_wire(wire, value):
             else:
                 grid[loc] = value
     return
+
 
 # Open input file
 filename = "day3.txt"
@@ -43,7 +63,7 @@ with open(filename, "r") as f:
     # Check wire intersections
     for loc, count in sorted(grid.items(), key=lambda item: item[1], reverse=True):
         if count == (WIRE1_VALUE | WIRE2_VALUE):
-            intersections[loc] = zero_manhattan_distance(loc)
+            intersections[loc] = electrical_distance(wire1, loc) + electrical_distance(wire2, loc)
 
     # Report nearest intersection
     nearest_intersection = sorted(intersections.items(), key=lambda item: item[1])[0]
