@@ -1,39 +1,39 @@
 #!/usr/bin/python
 
 from itertools import permutations 
-
-OPCODE_ADD      = 1
-OPCODE_MULTIPLY = 2
-OPCODE_INPUT    = 3
-OPCODE_OUTPUT   = 4
-OPCODE_JIT      = 5
-OPCODE_JIF      = 6
-OPCODE_LT       = 7
-OPCODE_EQ       = 8
-OPCODE_HALT     = 99
-
-opcode_lengths = { 1:  4,
-                   2:  4,
-                   3:  2,
-                   4:  2,
-                   5:  0,
-                   6:  0,
-                   7:  4,
-                   8:  4,
-                   99: 0 }
+import copy
 
 class IntcodeNode:
-    def __init__(self, program):
-        self.program = program
+    OPCODE_ADD      = 1
+    OPCODE_MULTIPLY = 2
+    OPCODE_INPUT    = 3
+    OPCODE_OUTPUT   = 4
+    OPCODE_JIT      = 5
+    OPCODE_JIF      = 6
+    OPCODE_LT       = 7
+    OPCODE_EQ       = 8
+    OPCODE_HALT     = 99
+
+    opcode_lengths = { 1:  4,
+                       2:  4,
+                       3:  2,
+                       4:  2,
+                       5:  0,
+                       6:  0,
+                       7:  4,
+                       8:  4,
+                       99: 0 }
+
+    def __init__(self, program, phase):
+        self.program = copy.deepcopy(program)
+        self.phase = phase
         self.pc = 0
 
-    def execute(self, argv):
-        mem = self.program #copy.deepcopy(self.program)
+    def execute(self, input):
+        mem = self.program
         pc = self.pc
-        result = 0
-        argc = 0
 
-        while mem[pc] != OPCODE_HALT:
+        while mem[pc] != self.OPCODE_HALT:
             opcode = mem[pc] % 100
             param1_mode = (mem[pc] / 100) % 10
             param2_mode = (mem[pc] / 1000) % 10
@@ -49,36 +49,39 @@ class IntcodeNode:
             except:
                 pass
 
-            if opcode == OPCODE_ADD:
+            if opcode == self.OPCODE_ADD:
                 mem[param3] = param1 + param2
-            elif opcode == OPCODE_MULTIPLY:
+            elif opcode == self.OPCODE_MULTIPLY:
                 mem[param3] = param1 * param2
-            elif opcode == OPCODE_INPUT:
+            elif opcode == self.OPCODE_INPUT:
                 param1 = mem[pc + 1]
-                mem[param1] = argv[argc]
-                argc += 1
-            elif opcode == OPCODE_OUTPUT:
-                result = param1
-            elif opcode == OPCODE_JIT:
+                if self.phase:
+                    mem[param1] = self.phase
+                    self.phase = None
+                else:
+                    mem[param1] = input
+            elif opcode == self.OPCODE_OUTPUT:
+                self.pc = pc + self.opcode_lengths[opcode]
+                return (param1, False)
+            elif opcode == self.OPCODE_JIT:
                 pc = param2 if param1 != 0 else pc + 3
-            elif opcode == OPCODE_JIF:
+            elif opcode == self.OPCODE_JIF:
                 pc = param2 if param1 == 0 else pc + 3
-            elif opcode == OPCODE_LT:
+            elif opcode == self.OPCODE_LT:
                 mem[param3] = 1 if param1 < param2 else 0
-            elif opcode == OPCODE_EQ:
+            elif opcode == self.OPCODE_EQ:
                 mem[param3] = 1 if param1 == param2 else 0
             else:
                 print "Unknown opcode {0} @ PC {1}!".format(opcode, pc)
                 break
 
-            pc += opcode_lengths[opcode]
+            pc += self.opcode_lengths[opcode]
 
-        return result
+        return (0, True)
 
 # Open input file
 filename = "day7.txt"
 f = open(filename, "r")
-
 
 with open(filename, "r") as f:
     for line in f:
@@ -86,17 +89,26 @@ with open(filename, "r") as f:
 
         max_thrust = 0
         max_phase = None
-        phases = permutations([0, 1, 2, 3, 4])
+        phases = permutations([5, 6, 7, 8, 9])
 
         for phase in list(phases):
+            nodes = []
             result = 0
+            thrust = 0
+            done = False
             # 5-stage pipeline
             for i in range(5):
-                node = IntcodeNode(program)
-                result = node.execute((phase[i], result))
-            if result > max_thrust:
-                max_thrust = result
+                nodes.append(IntcodeNode(program, phase[i]))
+
+            i = 0
+            while not done:
+                result, done = nodes[i % len(nodes)].execute(result)
+                if (len(nodes) - 1 == i % len(nodes)) and not done: thrust = result
+                i += 1
+
+            if thrust > max_thrust:
+                max_thrust = thrust
                 max_phase = phase
             
-        print "Max thruster signal is {0} (from phase settings {1}".format(max_thrust, max_phase)
+        print "Max thruster signal is {0} (from phase settings {1})".format(max_thrust, max_phase)
         
