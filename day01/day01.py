@@ -6,7 +6,7 @@ def fuel_requirements(mass):
     return max(0, int(math.floor(mass / 3) - 2))
 
 # Open input file
-filename = "day1.txt"
+filename = "day01.txt"
 f = open(filename, "r")
 
 total_fuel = 0

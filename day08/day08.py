@@ -9,7 +9,7 @@ PIXEL_WHITE       = 1
 PIXEL_TRANSPARENT = 2
 
 # Open input file
-filename = "day8.txt"
+filename = "day08.txt"
 f = open(filename, "r")
 
 fewest_zeroes = IMAGE_WIDTH * IMAGE_HEIGHT + 1

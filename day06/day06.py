@@ -42,7 +42,7 @@ class Body:
         return len(path) + len(dest_path)
 
 # Open input file
-filename = "day6.txt"
+filename = "day06.txt"
 f = open(filename, "r")
 
 bodies = {}

@@ -80,7 +80,7 @@ class IntcodeNode:
         return (0, True)
 
 # Open input file
-filename = "day7.txt"
+filename = "day07.txt"
 f = open(filename, "r")
 
 with open(filename, "r") as f:

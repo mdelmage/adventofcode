@@ -8,7 +8,7 @@ PC_ADVANCE      = 4
 TARGET          = 19690720
 
 # Open input file
-filename = "day2.txt"
+filename = "day02.txt"
 f = open(filename, "r")
 
 with open(filename, "r") as f:

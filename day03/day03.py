@@ -47,7 +47,7 @@ def unroll_wire(wire, value):
 
 
 # Open input file
-filename = "day3.txt"
+filename = "day03.txt"
 f = open(filename, "r")
 
 grid = {}

@@ -21,7 +21,7 @@ opcode_lengths = { 1:  4,
                    99: 0 }
 
 # Open input file
-filename = "day5.txt"
+filename = "day05.txt"
 f = open(filename, "r")
 
 with open(filename, "r") as f:
