@@ -56,6 +56,7 @@ class IntcodeNode:
         self.relative_base = 0
         self.state = STATE_PAINT
         self.pc = 0
+        self.panel[self.location] = COLOR_WHITE
 
     def read(self, address):
         if address in self.program:
@@ -163,8 +164,8 @@ with open(filename, "r") as f:
         node = IntcodeNode(program)
         node.execute()
 
-        for y in range(-25, 25):
-            for x in range(-25, 25):
+        for y in range(-5, 10):
+            for x in range(0, 50):
                 if node.location[0] == x and node.location[1] == y:
                     print "^",
                 elif (x, y) in node.panel and COLOR_WHITE == node.panel[(x, y)]:
