@@ -1,4 +1,5 @@
 #!/usr/bin/python
+# coding: utf-8
 
 import copy
 from collections import namedtuple
@@ -9,9 +10,12 @@ TILE_BLOCK  = 2
 TILE_PADDLE = 3
 TILE_BALL   = 4
 
-screen = {}
-for i in range(5):
-    screen[i] = []
+SPRITES = [' ', '|', '█', '▂', 'o']
+
+COORD_SCORE = (-1, 0)
+
+MEMORY_QUARTERS = 0
+FREE_PLAY_CHEAT_CODE = 2
 
 class IntcodeNode:
     Pointer = namedtuple('Pointer', 'address value')
@@ -31,26 +35,32 @@ class IntcodeNode:
     ADDRESS_IMMEDIATE = 1
     ADDRESS_RELATIVE  = 2
 
-    opcode_lengths = { 1:  4,
-                       2:  4,
-                       3:  2,
-                       4:  2,
-                       5:  0,
-                       6:  0,
-                       7:  4,
-                       8:  4,
-                       9:  2,
-                       99: 0 }
-
-    location = (0, 0)
-    direction = 0
-    panel = {}
+    opcode_lengths = { OPCODE_ADD      : 4,
+                       OPCODE_MULTIPLY : 4,
+                       OPCODE_INPUT    : 2,
+                       OPCODE_OUTPUT   : 2,
+                       OPCODE_JIT      : 0,
+                       OPCODE_JIF      : 0,
+                       OPCODE_LT       : 4,
+                       OPCODE_EQ       : 4,
+                       OPCODE_RELATIVE : 2,
+                       OPCODE_HALT     : 0 }
 
     def __init__(self, program):
         self.program = copy.deepcopy(program)
         self.relative_base = 0
         self.pc = 0
         self.output = []
+
+        # Day 13-specific attributes
+        self.x_ball = None
+        self.x_paddle = None
+        self.score = 0
+        self.screen = {}
+
+        for x in range(50):
+            for y in range(25):
+                self.screen[(x, y)] = TILE_EMPTY
 
     def read(self, address):
         if address in self.program:
@@ -84,6 +94,14 @@ class IntcodeNode:
 
         return param
 
+    def print_screen(self):
+        print "Score: {0}".format(self.score)
+        for y in range(25):
+            row = ""
+            for x in range(50):
+                row += SPRITES[self.screen[(x, y)]]
+            print row
+
     def execute(self):
         while self.read(self.pc) != self.OPCODE_HALT:
             instruction = self.read(self.pc)
@@ -101,11 +119,29 @@ class IntcodeNode:
             elif self.OPCODE_MULTIPLY == opcode:
                 self.write(param3.address, param1.value * param2.value)
             elif self.OPCODE_INPUT == opcode:
-                self.write(param1.address, input("Input: "))
+                if self.x_ball < self.x_paddle:
+                    correction = -1
+                elif self.x_ball > self.x_paddle:
+                    correction = 1
+                else:
+                    correction = 0
+                self.write(param1.address, correction)
+                self.print_screen()
+
             elif self.OPCODE_OUTPUT == opcode:
                 self.output.append(param1.value)
                 if 3 == len(self.output):
-                    screen[self.output[2]].append((self.output[0], self.output[1]))
+                    coord = (self.output[0], self.output[1])
+                    tile = self.output[2]
+                    if TILE_PADDLE == tile:
+                        self.x_paddle = coord[0]
+                    elif TILE_BALL == tile:
+                        self.x_ball = coord[0]
+
+                    if COORD_SCORE == coord:
+                        self.score = self.output[2]
+                    else:
+                        self.screen[coord] = self.output[2]
                     self.output = []
             elif self.OPCODE_JIT == opcode:
                 self.pc = param2.value if param1.value != 0 else self.pc + 3
@@ -124,7 +160,7 @@ class IntcodeNode:
             self.pc += self.opcode_lengths[opcode]
 
         #print "halt @ PC {0} ({1})".format(self.pc, self.read(self.pc))
-
+        self.print_screen()
 
 # Open input file
 filename = "day13.txt"
@@ -139,6 +175,5 @@ with open(filename, "r") as f:
             i += 1
 
         node = IntcodeNode(program)
+        node.program[MEMORY_QUARTERS] = FREE_PLAY_CHEAT_CODE
         node.execute()
-
-        print "There are {0} block tiles on the screen.".format(len(screen[TILE_BLOCK]))
