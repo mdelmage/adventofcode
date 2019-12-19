@@ -124,8 +124,8 @@ class IntcodeNode:
                     row += " "
             print row
 
-    def measure_paths(self):
-        paths = {0: [(0, 0)]}
+    def measure_paths(self, source):
+        paths = {0: [source]}
         path_len = 0
 
         while len(paths[path_len]) > 0:
@@ -134,11 +134,11 @@ class IntcodeNode:
                 self.map[coord] = path_len
                 for move in MOVES:
                     next_coord = (coord[0] + move[0], coord[1] + move[1])
-                    if self.map[next_coord] in (TILE_EMPTY, TILE_OXYGEN):
+                    if self.map[next_coord] in (TILE_EMPTY, TILE_OXYGEN, TILE_START):
                         paths[path_len + 1].append(next_coord)
             path_len += 1
 
-        return
+        return path_len - 1
 
     def execute(self):
         while self.read(self.pc) != self.OPCODE_HALT:
@@ -178,9 +178,6 @@ class IntcodeNode:
                     self.map[self.next_location[0], self.next_location[1]] = TILE_OXYGEN
                     self.location = self.next_location
                     self.oxygen = self.location
-                    #print "Found the Oxygen system at {0}!".format(self.location)
-                if 0 == random.randint(0, 10000):
-                    self.print_screen()
             elif self.OPCODE_JIT == opcode:
                 self.pc = param2.value if param1.value != 0 else self.pc + 3
             elif self.OPCODE_JIF == opcode:
@@ -222,6 +219,11 @@ with open(filename, "r") as f:
         node.execute()
 
         # Phase II: Pathfinding
-        node.measure_paths()
-        node.print_screen()
-        print "The shortest path to the oxygen system is {0}!".format(node.map[node.oxygen])
+        n1 = copy.deepcopy(node)
+        n1.measure_paths((0, 0))
+        n1.print_screen()
+        print "The shortest path to the oxygen system is {0}!".format(n1.map[node.oxygen])
+
+        # Phase III: Oxygenating
+        n2 = copy.deepcopy(node)
+        print "It took {0} minutes to replenish the ship with O2!".format(n2.measure_paths(node.oxygen))
