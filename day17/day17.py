@@ -4,6 +4,9 @@
 import copy
 from collections import namedtuple
 
+WAKEUP_ADDR = 0
+WAKEUP_CMD  = 2
+
 class IntcodeNode:
     Pointer = namedtuple('Pointer', 'address value')
 
@@ -43,6 +46,16 @@ class IntcodeNode:
         self.x = 0
         self.y = 0
         self.map = {}
+        self.dust = None
+
+        # Main routine, Functions A,B,C and video feed options
+        main = "A,C,A,C,B,B,C,A,C,B\n"
+        func_a = "L,8,R,12,R,12,R,10\n"
+        func_b = "L,10,R,10,L,6\n"
+        func_c = "R,10,R,12,R,10\n"
+        video = "n\n"
+        self.input = main + func_a + func_b + func_c + video
+        self.input_index = 0
 
     def read(self, address):
         if address in self.program:
@@ -93,16 +106,20 @@ class IntcodeNode:
             elif self.OPCODE_MULTIPLY == opcode:
                 self.write(param3.address, param1.value * param2.value)
             elif self.OPCODE_INPUT == opcode:
-                self.write(param1.address, input("Input: "))
+                self.write(param1.address, ord(self.input[self.input_index]))
+                self.input_index += 1
             elif self.OPCODE_OUTPUT == opcode:
-                self.map[(self.x, self.y)] = param1.value
-                if ord('\n') == param1.value:
-                    self.x = 0
-                    self.y += 1
-                    print ""
+                if param1.value > 256:
+                    self.dust = param1.value
                 else:
-                    self.x += 1
-                    print chr(param1.value),
+                    self.map[(self.x, self.y)] = param1.value
+                    if ord('\n') == param1.value:
+                        self.x = 0
+                        self.y += 1
+                        print ""
+                    else:
+                        self.x += 1
+                        print chr(param1.value),
             elif self.OPCODE_JIT == opcode:
                 self.pc = param2.value if param1.value != 0 else self.pc + 3
             elif self.OPCODE_JIF == opcode:
@@ -131,6 +148,7 @@ with open("day17.txt", "r") as f:
             i += 1
 
         # Phase I: Produce a map with Intcode program
+        program[WAKEUP_ADDR] = WAKEUP_CMD
         node = IntcodeNode(program)
         node.execute()
 
@@ -149,3 +167,4 @@ with open("day17.txt", "r") as f:
                     alignment_sum += (location[0] * location[1])
 
         print "Sum of alignment parameters is {0}.".format(alignment_sum)
+        print "Dust collected: {0}".format(node.dust)
