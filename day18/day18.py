@@ -3,12 +3,11 @@
 
 import copy
 import sys
-import time
 
 DIRECTIONS = [(1, 0), (0, 1), (-1, 0), (0, -1)]
 TILE_PASSAGE  = '.'
 TILE_WALL     = '#'
-TILE_ENTRANCE = '@'
+TILE_ENTRANCES = ['!', '@', '$', '%']
 
 keys = []
 key_locations = {}
@@ -44,12 +43,13 @@ def map_keys(key, location, doors_entered, dist_traveled):
                 #print "Mapped {0}<-->{1} at dist {2} with doors {3}!".format(key, m[l], dist_traveled + path_len, doors_entered)
             m[l] = path_len
             for next_l in [(l[0] + d[0], l[1] + d[1]) for d in DIRECTIONS]:
-                if next_l in m and m[next_l] in keys + doors + [TILE_PASSAGE, TILE_ENTRANCE]:
+                if next_l in m and m[next_l] in keys + doors + [TILE_PASSAGE] + TILE_ENTRANCES:
                     if m[next_l] in doors:
                         if m[next_l] not in doors_entered:
-                            #print "Found a door at dist {0}!".format(dist_traveled + path_len + 1)
-                            beyond_door = (l[0] + 2* (next_l[0] - l[0]), l[1] + 2 * (next_l[1] - l[1]))
-                            map_keys(key, beyond_door, doors_entered + [m[next_l]], dist_traveled + path_len + 2)
+                            for beyond_door in [(next_l[0] + d[0], next_l[1] + d[1]) for d in DIRECTIONS]:
+                                if beyond_door != next_l and TILE_WALL != m[beyond_door]:
+                                    #print "Found a door {0} at dist {1}!".format(m[next_l], dist_traveled + path_len + 1)
+                                    map_keys(key, beyond_door, doors_entered + [m[next_l]], dist_traveled + path_len + 2)
                     else:
                         paths[path_len + 1].append(next_l)
 
@@ -57,8 +57,8 @@ def map_keys(key, location, doors_entered, dist_traveled):
 
     return
 
-def explore(location, keys_collected, dist_traveled, history, max_depth):
-    #print "{0} {1} {2} {3}".format(location, keys_collected, dist_traveled, history)
+def explore(locations, keys_collected, dist_traveled, history, max_depth):
+    #print "{0} {1} {2} {3}".format(locations, keys_collected, dist_traveled, history)
     global stats
     global shortest_path
     global shortest_dist
@@ -69,7 +69,7 @@ def explore(location, keys_collected, dist_traveled, history, max_depth):
 
     if max_depth < len(keys) and len(keys_collected) == max_depth:
         if dist_traveled not in solutions: solutions[dist_traveled] = []
-        solutions[dist_traveled].append(history)
+        solutions[dist_traveled].append((locations, history))
 
     if len(keys_collected) == max_depth:#len(keys):
         if dist_traveled < shortest_dist:
@@ -79,15 +79,20 @@ def explore(location, keys_collected, dist_traveled, history, max_depth):
         return
 
     # Recursive dive into possible next locations, sorted by ascending distance
-    for k in key_paths[location]:
-        if k not in keys_collected:
-            kc = set(keys_collected)
-            kr = key_paths[location][k][1]
-            dist_to_travel = key_paths[location][k][0]
-            if (max_depth < len(keys) or dist_traveled + dist_to_travel < shortest_dist) and kr.issubset(kc):
-                new_keys_collected = copy.deepcopy(keys_collected)
-                new_keys_collected.add(k)
-                explore(k, new_keys_collected, dist_traveled + dist_to_travel, history + [k], max_depth)
+    for location in locations:
+        if location in key_paths:
+            for k in key_paths[location]:
+                if k not in keys_collected:
+                    kc = set(keys_collected)
+                    kr = key_paths[location][k][1]
+                    dist_to_travel = key_paths[location][k][0]
+                    if (max_depth < len(keys) or dist_traveled + dist_to_travel < shortest_dist) and kr.issubset(kc):
+                        new_location = copy.deepcopy(locations)
+                        new_location.remove(location)
+                        new_location.append(k)
+                        new_keys_collected = copy.deepcopy(keys_collected)
+                        new_keys_collected.add(k)
+                        explore(new_location, new_keys_collected, dist_traveled + dist_to_travel, history + [k], max_depth)
     return
 
 # Open input file
@@ -98,7 +103,7 @@ with open("day18.txt", "r") as f:
         x = 0
         for c in line.strip():
             vault_map[(x, y)] = c
-            if c in [TILE_ENTRANCE] + [chr(key) for key in range(ord('a'), ord('z') + 1)]:
+            if c in TILE_ENTRANCES + [chr(key) for key in range(ord('a'), ord('z') + 1)]:
                 keys.append(c)
                 key_locations[c] = (x, y)
             x += 1
@@ -122,8 +127,8 @@ with open("day18.txt", "r") as f:
     # Explore the paths, yo.
     # Split the task into exhaustive search of the first X elements, then
     # a shortest-first search of those X-length paths.
-    print "starting location = {0}".format(key_locations[TILE_ENTRANCE])
-    explore(TILE_ENTRANCE, set(TILE_ENTRANCE), 0, [], 9)
+    print "starting locations = {0}".format([key_locations[x] for x in TILE_ENTRANCES])
+    explore(TILE_ENTRANCES, set(TILE_ENTRANCES), 0, [], 14)
     print "Shortest path was {0}: {1}".format(shortest_dist, shortest_path)
     print "{0} iterations.".format(stats['i'])
     print len(solutions)
@@ -134,7 +139,9 @@ with open("day18.txt", "r") as f:
     for path_len in sorted(solutions):
         print "{0}: {1}".format(path_len, len(solutions[path_len]))
         for s in solutions[path_len]:
+            l = s[0]
+            h = s[1]
             #print "Trying shortest pathlet {0} {1}...".format(path_len, s)
-            explore(s[-1:][0], set([TILE_ENTRANCE] + s), path_len, s, len(keys))
+            explore(l, set(TILE_ENTRANCES + h), path_len, h, len(keys))
     print "Shortest path was {0}: {1}".format(shortest_dist, shortest_path)
     print "{0} iterations.".format(stats['i'])
