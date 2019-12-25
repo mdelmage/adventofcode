@@ -4,7 +4,10 @@
 import copy
 from collections import namedtuple
 
-GRID_SIZE = 50
+GRID_SIZE = 100
+
+OFFSET_X = 1523
+OFFSET_Y = 1022
 
 STATUS_STATIONARY = 0
 STATUS_PULLED     = 1
@@ -14,6 +17,7 @@ tiles = { STATUS_STATIONARY: '.',
 
 input_index = 0
 pulled = 0
+output = ""
 
 class IntcodeNode:
     Pointer = namedtuple('Pointer', 'address value')
@@ -103,21 +107,23 @@ class IntcodeNode:
                 # Even indices are the X coordinate.
                 # Odd indices are the Y coordinate.
                 if 0 == input_index % 2:
-                    coord = (input_index / 2) % GRID_SIZE
+                    coord = OFFSET_X + ((input_index / 2) % GRID_SIZE)
                     #print "inputting x coord {0}".format(coord)
                 else:
-                    coord = (input_index - 1) / 2 / GRID_SIZE
+                    coord = OFFSET_Y + ((input_index - 1) / 2 / GRID_SIZE)
                     #print "inputting y coord {0}".format(coord)
                 self.write(param1.address, coord)
                 input_index += 1
             elif self.OPCODE_OUTPUT == opcode:
+                global output
                 global pulled
                 if STATUS_PULLED == param1.value:
                     pulled += 1
 
-                print tiles[param1.value],
+                output += tiles[param1.value]
                 if 0 == input_index % (2 * GRID_SIZE):
-                    print ""
+                    print output
+                    output = ""
             elif self.OPCODE_JIT == opcode:
                 self.pc = param2.value if param1.value != 0 else self.pc + 3
             elif self.OPCODE_JIF == opcode:
