@@ -133,12 +133,33 @@ with open("day21.txt", "r") as f:
 
         # Part One: WALK
         script = ""
+        # jump if there’s a gap coming up !(A, B, C) and there’s a safe landing space (D).
         script += "OR A T\n"
         script += "AND B T\n"
         script += "AND C T\n"
         script += "NOT T J\n"
         script += "AND D J\n"
         script += "WALK\n"
+
+        node = IntcodeNode(program, script)
+        node.execute()
+        print "Springdroid reports {0} damage.".format(node.damage)
+
+        # Part Two: RUN
+        script = ""
+        # jump if there’s a gap coming up !(A, B, C) and there’s a safe landing space (D).
+        script += "OR A T\n"
+        script += "AND B T\n"
+        script += "AND C T\n"
+        script += "NOT T J\n"
+        script += "AND D J\n"
+
+        # if jumping, make sure there's another safe space after landing (E), or by jump (H).
+        script += "OR E T\n"
+        script += "OR H T\n"
+        script += "AND T J\n"
+        script += "RUN\n"
+
         node = IntcodeNode(program, script)
         node.execute()
         print "Springdroid reports {0} damage.".format(node.damage)
