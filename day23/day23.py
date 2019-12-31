@@ -8,6 +8,7 @@ from __builtin__ import True
 
 QUEUE_EMPTY = -1
 NETWORK_SIZE = 50
+NAT_ADDRESS = 255
  
 class IntcodeNode:
     Pointer = namedtuple('Pointer', 'address value')
@@ -49,6 +50,7 @@ class IntcodeNode:
         self.provisioned = False
         self.input_queue = Queue()
         self.output_queue = Queue()
+        self.nat_packet = None
 
     def read(self, address):
         if address in self.program:
@@ -146,14 +148,32 @@ with open("day23.txt", "r") as f:
             i += 1
 
         nodes = [IntcodeNode(program, addr) for addr in range(NETWORK_SIZE)]
+        nat = IntcodeNode(program, NAT_ADDRESS)
 
         i = 0
+        idle_count = 0
+        last_nat_packet = None
         while True:
             o = nodes[i].execute()
-            if o is not None:
-                if 255 == o[0]:
-                    print o
-                    break
+            if o is None:
+                idle_count += 1
+                if idle_count > 500:
+                    # Network is idle, do some shit
+                    #print "idle! {0}".format(nat.nat_packet)
+                    if last_nat_packet:
+                        if last_nat_packet == nat.nat_packet:
+                            print "Duplicate Y value: {0}".format(nat.nat_packet[1])
+                            break
+
+                    last_nat_packet = nat.nat_packet
+                    nodes[0].input_queue.put_nowait(nat.nat_packet[0])
+                    nodes[0].input_queue.put_nowait(nat.nat_packet[1])
+                    idle_count = 0
+            else:
+                idle_count = 0
+                if NAT_ADDRESS == o[0]:
+                    nat_packet = (o[1], o[2])
+                    nat.nat_packet = nat_packet
                 else:
                     nodes[o[0]].input_queue.put_nowait(o[1])
                     nodes[o[0]].input_queue.put_nowait(o[2])
