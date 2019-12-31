@@ -3,69 +3,105 @@
 
 GRID_SIZE = 5
 
-TILE_BUG   = '#'
-TILE_EMPTY = '.'
+TILE_BUG       = '#'
+TILE_EMPTY     = '.'
+TILE_RECURSION = '?'
 
+levels = [0]
 grid = {}
-history = set()
 
-def print_grid():
-    for y in range(GRID_SIZE):
-        grid_str = ""
-        for x in range(GRID_SIZE):
-            grid_str += grid[(x, y)]
-        print grid_str
-    print ""
+SPECIAL_TILES = { (1, 2): [(1, 0, 0), (1, 0, 1), (1, 0, 2), (1, 0, 3), (1, 0, 4)],
+                  (3, 2): [(1, 4, 0), (1, 4, 1), (1, 4, 2), (1, 4, 3), (1, 4, 4)],
+                  (2, 1): [(1, 0, 0), (1, 1, 0), (1, 2, 0), (1, 3, 0), (1, 4, 0)],
+                  (2, 3): [(1, 0, 4), (1, 1, 4), (1, 2, 4), (1, 3, 4), (1, 4, 4)],
 
-def biodiversity_score():
+                  (0, 0): [(-1, 1, 2), (-1, 2, 1)],
+                  (0, 4): [(-1, 1, 2), (-1, 2, 3)],
+                  (4, 0): [(-1, 2, 1), (-1, 3, 2)],
+                  (4, 4): [(-1, 3, 2), (-1, 2, 3)],
+
+                  (0, 1): [(-1, 1, 2)],
+                  (0, 2): [(-1, 1, 2)],
+                  (0, 3): [(-1, 1, 2)],
+
+                  (4, 1): [(-1, 3, 2)],
+                  (4, 2): [(-1, 3, 2)],
+                  (4, 3): [(-1, 3, 2)],
+
+                  (1, 0): [(-1, 2, 1)],
+                  (2, 0): [(-1, 2, 1)],
+                  (3, 0): [(-1, 2, 1)],
+
+                  (1, 4): [(-1, 2, 3)],
+                  (2, 4): [(-1, 2, 3)],
+                  (3, 4): [(-1, 2, 3)]}
+
+C = (GRID_SIZE / 2)
+
+def print_grids():
+    for level in sorted(levels):
+        print "Level {0}".format(level)
+        for y in range(GRID_SIZE):
+            grid_str = ""
+            for x in range(GRID_SIZE):
+                grid_str += grid[(level, x, y)]
+            print grid_str
+        print ""
+
+def neighbors(level, x, y):
     score = 0
-    for y in range(GRID_SIZE):
-        for x in range(GRID_SIZE):
-            if TILE_BUG == grid[(x, y)]: score += pow(2, (y * GRID_SIZE) + x)
-    return score
+    potential_neighbors = [(level, x - 1, y), (level, x + 1, y), (level, x, y - 1), (level, x, y + 1)]
 
-def neighbors(x, y):
-    score = 0
-    for n in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
-            neighbor = (x + n[0], y + n[1])
-            if neighbor not in grid: continue
-            if TILE_BUG == grid[neighbor]:
-                score += 1
+    if (x, y) in SPECIAL_TILES:
+        for s in SPECIAL_TILES[(x, y)]:
+            potential_neighbors += [(level + s[0], s[1], s[2])]
+
+    for n in potential_neighbors:
+        if n not in grid: continue
+        if TILE_BUG == grid[n]:
+            score += 1
     return score
 
 def iterate():
     global grid
     next_gen_grid = {}
-    for y in range(GRID_SIZE):
-        for x in range(GRID_SIZE):
-            neighbor_count = neighbors(x, y)
-            if TILE_BUG == grid[(x, y)] and 1 != neighbor_count:
-                next_gen_grid[(x, y)] = TILE_EMPTY
-            elif TILE_EMPTY == grid[(x, y)] and neighbor_count in [1, 2]:
-                next_gen_grid[(x, y)] = TILE_BUG
-            else:
-                next_gen_grid[(x, y)] = grid[(x, y)]
+    for level in sorted(levels + [sorted(levels)[0] - 1] + [sorted(levels)[len(levels) - 1] + 1]):
+        if (level, 0, 0) not in grid:
+            levels.append(level)
+            for y in range(GRID_SIZE):
+                for x in range(GRID_SIZE):
+                    grid[(level, x, y)] = TILE_EMPTY
+                    next_gen_grid[(level, x, y)] = TILE_EMPTY
+
+        for y in range(GRID_SIZE):
+            for x in range(GRID_SIZE):
+                if (C, C) == (x, y):
+                    next_gen_grid[(level, x, y)] = TILE_RECURSION
+                    continue
+                neighbor_count = neighbors(level, x, y)
+                if TILE_BUG == grid[(level, x, y)] and 1 != neighbor_count:
+                    next_gen_grid[(level, x, y)] = TILE_EMPTY
+                elif TILE_EMPTY == grid[(level, x, y)] and neighbor_count in [1, 2]:
+                    next_gen_grid[(level, x, y)] = TILE_BUG
+                else:
+                    next_gen_grid[(level, x, y)] = grid[(level, x, y)]
     grid = next_gen_grid
                 
-
 # Open input file
 with open("day24.txt", "r") as f:
     y = 0
     for line in f:
         for x in range(GRID_SIZE):
-            grid[(x, y)] = line[x]
+            grid[(0, x, y)] = line[x]
         y += 1
 
-    history.add(biodiversity_score())
-    print_grid()
+    print_grids()
 
-    gen = 0
-    while True:
+    for i in range(200):
         iterate()
-        biodiversity = biodiversity_score()
-        if biodiversity in history:
-            print "Duplicate biodiversity rating in Generation {0}: {1}".format(gen, biodiversity)
-            print_grid()
-            break
-        history.add(biodiversity)
-        gen += 1
+    print_grids()
+
+    population = 0
+    for cell in grid:
+        if TILE_BUG == grid[cell]: population += 1
+    print "Total population after {0} generations: {1}".format(i + 1, population)
