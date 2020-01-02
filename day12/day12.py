@@ -47,6 +47,26 @@ class Moon:
     def move(self):
         self.pos += self.vel
 
+# https://gist.github.com/endolith/114336/eff2dc13535f139d0d6a2db68597fad2826b53c3
+def gcd(a,b):
+    """Compute the greatest common divisor of a and b"""
+    while b > 0:
+        a, b = b, a % b
+    return a
+    
+def lcm(a, b):
+    """Compute the lowest common multiple of a and b"""
+    return a * b / gcd(a, b)
+
+def periodicity(l):
+    factor = 0
+    while True:
+        factor += 1
+        if l[:100] == l[factor:factor + 100]:
+            return factor
+        if factor > 1000000:
+            print "i gave up!"
+            return 1
 
 moons = []
 
@@ -57,11 +77,12 @@ with open(filename, "r") as f:
         tokens = line.strip().replace("<", "").replace(">", "").replace(" ", "").replace("x=", "").replace("y=", "").replace("z=", "").split(",")
         moons.append(Moon(int(tokens[0]), int(tokens[1]), int(tokens[2])))
     
-    print "Step 0:"
-    for moon in moons:
-        print moon
-
-    for step in range(1000):
+    history = [[[] for axis in ['x', 'y', 'z']] for m in moons]
+    for step in range(1000000):
+        for i in range(len(moons)):
+            history[i][0].append(moons[i].pos.x)
+            history[i][1].append(moons[i].pos.y)
+            history[i][2].append(moons[i].pos.z)
 
         # Get all combinations of moon pairs
         pairs = list(combinations([0, 1, 2, 3], 2))
@@ -70,12 +91,17 @@ with open(filename, "r") as f:
             moon_b = moons[pair[1]]
             moon_a.gravitate(moon_b)
             moon_b.gravitate(moon_a)
-        print "Step {0}:".format(step + 1)
+
         for moon in moons:
             moon.move()
-            print moon
 
-    energy = 0
-    for moon in moons:
-        energy += (abs(moon.pos.x) + abs(moon.pos.y) + abs(moon.pos.z)) * (abs(moon.vel.x) + abs(moon.vel.y) + abs(moon.vel.z))
-    print "Total energy = {0}".format(energy)
+    factors = set()
+    for moon in range(len(history)):
+        for axis in range(len(history[moon])):
+            factors.add(periodicity(history[moon][axis]))
+
+    print factors
+    least_multiple = 1
+    for f in factors:
+        least_multiple = lcm(least_multiple, f)
+    print "Universe repeats in {0} steps!".format(least_multiple)
