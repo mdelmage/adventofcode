@@ -34,7 +34,7 @@ SLOPE = (3, 1)
 # right 3 and down 1 from there, and so on until you go past the
 # bottom of the map.
 
-print 'Part One: %d trees encountered.' % run_slope(SLOPE)
+print 'Part One: {0} trees encountered.'.format(run_slope(SLOPE))
 
 # Time to check the rest of the slopes - you need to minimize
 # the probability of a sudden arboreal stop, after all.
@@ -58,4 +58,4 @@ trees_product = 1
 for s in SLOPES:
     trees_product *= run_slope(s)
 
-print 'Part Two: %d trees encountered.' % trees_product
+print 'Part Two: {0} trees encountered.'.format(trees_product)
