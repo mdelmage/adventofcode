@@ -1,7 +1,36 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-OPTIMIZATION_LEVEL = 3
+def find_periodicity(n, step, buses):
+    # Using the initial value and step amount, scan for two matches
+    # that satisfy all the buses in the list.
+
+    # The first match describes the earliest time the buses meet our requirements.
+    match = False
+    while not match:
+        match = True
+        for (bus, offset) in buses:
+            if ((n + offset) % bus) != 0:
+                match = False
+                break
+        if match: initial_match = n
+        n += step
+
+    # The second match describes the periodicity of the times that meet our requirements.
+    # Our inputs are all prime numbers, so we could just say that the periodicity is just
+    # the product of the inputs, but the more general solution requires us to allow for
+    # inputs that share a common factor.
+    match = False
+    while not match:
+        match = True
+        for (bus, offset) in buses:
+            if ((n + offset) % bus) != 0:
+                match = False
+                break
+        if match: periodicity = n - initial_match
+        n += step
+
+    return (initial_match, periodicity)
 
 # Parse the shuttle bus notes and save each line
 with open('day13_input.txt') as f:
@@ -38,44 +67,19 @@ print 'Part One: Bus ID {0} times wait time {1} = {2}.'.format(best_departure_bu
 
 
 # entries that show x must be out of service, so you decide to ignore them.
-divisor_list = []
+buses_in_service = []
 for i in range(len(bus_lines)):
     if bus_lines[i] > 0:
-        divisor_list.append((i, bus_lines[i]))
+        buses_in_service.append((bus_lines[i], i))
 
-# Pull out the largest 3 bus lines and their indices
-top_divisors = sorted(bus_lines, reverse=True)[:OPTIMIZATION_LEVEL]
-periodicity_checklist = []
-for divisor in divisor_list:
-    if divisor[1] in top_divisors:
-        periodicity_checklist.append(divisor)
+# Optimize the problem by considering an ever-growing list of buses.
+# Once we understand the initial values and periodicity of their matches,
+# we can add more buses to the list without incurring much penalty, by
+# skipping all the time slots that did not meet earlier bounds.
+#
+# As we consider more buses, the step value will grow, making our search faster.
+(n, step) = (0, 1)
+for i in range(len(buses_in_service)):
+    (n, step) = find_periodicity(n, step, buses_in_service[:i + 1])
 
-# Somewhat-naive optimization: take the highest few bus lines (divisors) and determine
-# the periodicity of the times when they meet the arrival requirements.
-n = 0
-periodicity_matches = []
-while len(periodicity_matches) < 2:
-    n += 1
-    match = True
-    for (departure_offset, bus) in periodicity_checklist:
-        if (n % bus) != bus - departure_offset:
-            match = False
-    if match:
-        periodicity_matches.append(n)
-
-initial_value = periodicity_matches[0]
-periodicity = periodicity_matches[1] - periodicity_matches[0]
-
-# Brute-force the departure times, but using the somewhat-optimized increment value
-# we found earlier by checking the periodicity of the highest few bus lines.
-n = initial_value
-while True:
-    n += periodicity
-    match = True
-    for (i, bus) in divisor_list:
-        if ((n + i) % bus) != 0:
-            match = False
-            break
-    if match: 
-        print 'Part Two: Earliest departure time is {0}.'.format(n)
-        break
+print 'Part Two: Earliest departure time is {0}.'.format(n)
