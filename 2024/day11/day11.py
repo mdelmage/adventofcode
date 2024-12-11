@@ -2,12 +2,12 @@
 # -*- coding: utf-8 -*-
 
 # Parse the line of stones note.
-with open('day11_input.txt') as f:
-    stones = [int(n) for n in [line.rstrip('\n') for line in f][0].split()]
+with open('day11_test.txt') as f:
+    stones = [45]#[int(n) for n in [line.rstrip('\n') for line in f][0].split()]
 
 # Consider the arrangement of stones in front of you.
 # How many stones will you have after blinking 25 times?
-for blink in range(25):
+for blink in range(40):
     stones_next = []
     for stone in stones:
         stones_str = str(stone)
@@ -33,5 +33,7 @@ for blink in range(25):
             stones_next.append(2024 * stone)
 
     stones = stones_next
+    print('{0} {1} {2}'.format(blink, len(set(stones)), len(stones)))
+    print(sorted(set(stones)))
 
 print('Part One: After 25 blinks there are {0} stones.'.format(len(stones)))
