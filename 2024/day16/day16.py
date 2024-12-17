@@ -23,7 +23,7 @@ with open('day16_input.txt') as f:
                 maze[(col, row)] = {}
             else:
                 maze[(col, row)] = maze_list[row][col]
-            if maze_list[row][col] == START: pos = (col, row)
+            if maze_list[row][col] == START: start = (col, row)
             if maze_list[row][col] == END: end = (col, row)
 
 # The Reindeer start on the Start Tile (marked S) facing East and need to reach the End Tile (marked E).
@@ -32,8 +32,8 @@ d = 0
 
 # Traverse the maze via flood-fill, a time-honored AoC tradition.
 # This one tracks the best score per tile, for each direction you entered via.
-maze[pos] = {d: 0}
-just_visited = [(pos, d, 0)]
+maze[start] = {d: 0}
+just_visited = [(start, d, 0)]
 while len(just_visited) > 0:
     visit_next = just_visited
     just_visited = []
@@ -71,3 +71,46 @@ for d in maze[end]:
 
 # Analyze your map carefully. What is the lowest score a Reindeer could possibly get?
 print('Part One: The best path has a score of {0}.'.format(best_score))
+
+tours = [([start], 0, 0)]
+all_best_paths = set()
+tick = 0
+while len(tours) > 0:
+    tours_next = []
+    search_set = set()
+    for (visited, d, score) in tours:
+        # ([a, b, c], d, score)
+        pos = visited[-1]
+        d_next = [(d - 1) % len(DIRS), d, (d + 1) % len(DIRS)]
+        score_next = [1001, 1, 1001]
+        neighbors = [((pos[0] + DIRS[d_next[i]][0], pos[1] + DIRS[d_next[i]][1]), d_next[i], score_next[i]) for i in range(len(d_next))]
+        neighbors = [n for n in neighbors if n[0] not in visited and maze[n[0]] != WALL]
+#        print(d_next)
+#        print(score_next)
+#        print(neighbors)
+        for n, n_d, n_score in neighbors:
+            if score + n_score <= best_score:
+                doubles = False
+                if (n, n_d, score + n_score) in search_set:
+                    for i in range(len(tours_next)):
+                        v, tnd, sc = tours_next[i]
+                        if v[-1] == n and tnd == n_d and sc == score + n_score:
+                            #print('double match found @ {0} {1} {2}'.format(n, n_d, score + n_score))
+                            doubles = True
+                            tours_next[i] = (list(set(v) | set(visited)) + [n], tnd, sc)
+                            #print(tours_next[i])
+                            break
+                if not doubles:
+                    tours_next.append((visited + [n], n_d, score + n_score))
+                    search_set.add((n, n_d, score + n_score))
+                    #print(tours_next[-1])
+
+    tours = tours_next
+    if len(tours) > 0: print(tick, len(tours), len(all_best_paths))
+    for visited, d, score in tours:
+        if visited[-1] == end and score == best_score:
+            for space in visited: all_best_paths.add(space)
+    tick += 1
+
+
+print(len(all_best_paths))
