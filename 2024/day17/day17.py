@@ -94,15 +94,27 @@ with open('day17_input.txt') as f:
 output = run()
 print('Part One: The program output is {0}.'.format(output))
 
+program_str = program_str.replace(',','')
 a_guess = 0
+matches = 0
 while True:
-    if a_guess % 100000 == 0: print(a_guess)
+#    print(a_guess)
     registers['A'] = a_guess
     registers['B'] = int(program_input[1].split(': ')[1])
     registers['C'] = int(program_input[2].split(': ')[1])
 
-    output = run()
+    # 2,4 bst B = A % 8
+    # 1,1 bxl B ^= 1 ^ 5 ^ (A // 2^B)
+    # 5,5 out print B % 8
+    # 0,3 adv A = A // 8
+    # 3,0 jnz if A != 0 goto begin
+
+    output = run().replace(',','')
     if output == program_str: break
-    a_guess += 1
+    print(oct(a_guess), output, output[:matches + 1], program_str[:matches+1], program_str)
+    if output[:matches + 1] == program_str[:matches+1]:
+        matches += 1
+    a_guess += 1#(0o10 ** matches)
+    if output == '2411': break
 
 print('Part Two: The correct value for Register A for the program to self-clone is {0}.'.format(a_guess))
