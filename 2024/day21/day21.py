@@ -70,17 +70,17 @@ numeric_keypad = {
 # | < | v | > |
 # +---+---+---+
 directional_keypad = {
-    'A<': ['<v<A', 'v<<A'],
-    '<A': ['>>^A', '>^vA'],
+    'A<': ['v<<A'],
+    '<A': ['>>^A'],
     'A^': ['<A'],
     '^A': ['>A'],
     'A>': ['vA'],
-    '>^': ['<^A', '^<A'],
+    '>^': ['<^A'],
     '^^': ['A'],
-    'Av': ['<vA', 'v<A'],
+    'Av': ['<vA'],
     'vv': ['A'],
-    'vA': ['^>A', '>^A'],
-    '^>': ['>vA', 'v>A'],
+    'vA': ['^>A'],
+    '^>': ['>vA'],
     '>A': ['^A'],
     '^<': ['v<A'],
     '<<': ['A'],
@@ -94,8 +94,23 @@ directional_keypad = {
     'v>': ['>A']
 }
 
-def manhattan_dist(src, dest):
-    return abs(src[0] - dest[0]) + abs(src[1] - dest[1])
+def shortest_next_sequences(sequences):
+    #print(sequences)
+    best_seqs = []
+    best_len = 9999999999999999999999999
+    for seq in sequences:
+        sequences_next = ['']
+        seq = 'A' + seq
+        for i in range(len(seq) - 1):
+            sequences_next = [p + n for p in sequences_next for n in directional_keypad[seq[i:i+2]]]
+        for seq_next in sequences_next:
+            seq_len = len(seq_next)
+            if seq_len < best_len:
+                best_len = seq_len
+                best_seqs = []
+            if seq_len == best_len:
+                best_seqs.append(seq_next)
+    return best_seqs
 
 # Parse the door codes list.
 with open('day21_input.txt') as f:
@@ -105,30 +120,20 @@ complexity_sum = 0
 for code in door_codes:
     directional_sequences_l1 = ['']
     code = 'A' + code
-    shortest_sequence = 99999999999999999
+    shortest_sequence = None
     for i in range(len(code) - 1):
         directional_sequences_l1 = [p + n for p in directional_sequences_l1 for n in numeric_keypad[code[i:i+2]]]
-    
-    for seql1 in directional_sequences_l1:
-        directional_sequences_l2 = ['']
-        seql1 = 'A' + seql1
-        for i in range(len(seql1) - 1):
-            directional_sequences_l2 = [p + n for p in directional_sequences_l2 for n in directional_keypad[seql1[i:i+2]]]
 
-        for seql2 in directional_sequences_l2:
-            directional_sequences_l3 = ['']
-            seql2 = 'A' + seql2
-            for i in range(len(seql2) - 1):
-                # We only need one sequence at Level 3, since they'll all be the same length.
-                directional_sequences_l3 = [p + n for p in [directional_sequences_l3[0]] for n in directional_keypad[seql2[i:i+2]]]
-            shortest_sequence = min(shortest_sequence, len(directional_sequences_l3[0]))
+    for i in range(25):
+        directional_sequences_l1 = shortest_next_sequences(directional_sequences_l1)
+        print(i, len(directional_sequences_l1), len(directional_sequences_l1[0]))
 
     # The complexity of a single code (like 029A) is equal to the result of multiplying these two values:
     #
     # The length of the shortest sequence of button presses you need to type on your directional keypad
     # in order to cause the code to be typed on the numeric keypad; for 029A, this would be 68.
     # The numeric part of the code (ignoring leading zeroes); for 029A, this would be 29.
-    complexity_sum += int(code[1:-1]) * shortest_sequence
+    complexity_sum += int(code.replace('A', '')) * len(directional_sequences_l1[0])
 
 # Find the fewest number of button presses you'll need to perform in order to cause the robot in front of the door to type each code.
 # What is the sum of the complexities of the five codes on your list?
