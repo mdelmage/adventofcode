@@ -82,7 +82,7 @@ print('Part One: Guard will visit {0} distinct positions.'.format(len(patrolled)
 # positions for such an obstruction. The new obstruction can't be placed at the guard's starting position -
 # the guard is there right now and would notice.
 loops_created = 0
-for new_obstruction in [l for l in patrol_map if patrol_map[l] == SPACE]:
+for new_obstruction in [l for l in patrolled if l != guard_pos_orig]:
     if loop_detected(new_obstruction): loops_created += 1
 
 # You need to get the guard stuck in a loop by adding a single new obstruction.

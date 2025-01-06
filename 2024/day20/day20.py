@@ -17,13 +17,11 @@ def count_cheats(cheat_len, cheat_threshold):
     savings = 0
     for cheat_step in range(len(path)):
         cheat_src = path[cheat_step]
-        for col in range(cheat_src[0] - cheat_len, cheat_src[0] + cheat_len + 1):
-            for row in range(cheat_src[1] - cheat_len, cheat_src[1] + cheat_len + 1):
-                cheat_dest = (col, row)
-                if cheat_dest != cheat_src and racetrack.get(cheat_dest, WALL) != WALL and manhattan_dist(cheat_src, cheat_dest) <= cheat_len:
-                    steps_saved = path.index(cheat_dest) - path.index(cheat_src) - manhattan_dist(cheat_src, cheat_dest)
-                    if steps_saved >= cheat_threshold:
-                        savings += 1
+        for cheat_idx in range(cheat_step + 1, len(path)):
+            cheat_dest = path[cheat_idx]
+            cheat_dist = manhattan_dist(cheat_src, cheat_dest)
+            if cheat_dist <= cheat_len and cheat_idx - cheat_step - cheat_dist >= cheat_threshold:
+                savings += 1
     return savings
 
 # Parse the racetrack map.

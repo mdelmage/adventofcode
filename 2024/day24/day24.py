@@ -24,11 +24,14 @@ random_ints = [
 16306328165765
 ]
 
+# By inspection of the puzzle input.
+BIT_WIDTH = 46
+
 def connect_nets(addend1=None, addend2=None):
     # If provided custom addends, use those instead.
     if addend1 and addend2:
         nets_local = {}
-        for bit in range(46):
+        for bit in range(BIT_WIDTH):
             nets_local['x{0:02}'.format(bit)] = addend1 & 1
             nets_local['y{0:02}'.format(bit)] = addend2 & 1
             addend1 //= 2
@@ -81,7 +84,8 @@ def lowest_error_bit():
 
     # To simplify the comparisons, if there is no error and the operation is correct, return a bit
     # that is higher than the width of the machine.
-    error_str = '1{0:046b}'.format(error)
+    error_str = '1{' + '0:0{0}b'.format(BIT_WIDTH) + '}'
+    error_str = error_str.format(error)
     error_bit = 0
     while error_str[-1] == '0':
         error_bit += 1
@@ -101,6 +105,24 @@ def swap(out1, out2):
             gates_new.append((in1, in2, op, out))
     gates = gates_new
 
+def bit_level(output):
+    # Skip end outputs -- we already know what level they are.
+    if output[0] in ['x', 'y', 'z']: return int(output[1:])
+
+    # String-replace all outputs with their respective inputs until no more substitions are left.
+    done = False
+    while not done:
+        done = True
+        for in1, in2, op, out in gates:
+            if out in output:
+                output = output.replace(out, '{0} {1}'.format(in1, in2))
+                done = False
+
+    # The level of an output is the highest output bit that it affects.
+    for l in range(BIT_WIDTH, -1, -1):
+        if '{0:02}'.format(l) in output:
+            return l
+
 # Parse the gate connections and initial wire values.
 with open('day24_input.txt') as f:
     gates_and_wires = [line.rstrip('\n') for line in f]
@@ -119,6 +141,13 @@ for inputs, output in [x.split(' -> ') for x in gates_input]:
     gates.append((in1, in2, op, output))
     outputs.append(output)
 
+# Evaluate the output of each level.
+bit_levels = {}
+for o in outputs:
+    l = bit_level(o)
+    if l not in bit_levels: bit_levels[l] = []
+    bit_levels[l].append(o)
+
 # Simulate the system of gates and wires. What decimal number does it output on the wires starting with z?
 x, y, z = connect_nets()
 print('Part One: The decimal output of the z wires is {0}.'.format(z))
@@ -129,17 +158,11 @@ print('Part One: The decimal output of the z wires is {0}.'.format(z))
 swaps = set()
 while len(swaps) < 8:
     # Generate a list of potential swaps to make (single pairs).
+    # To optimize the search space, only consider outputs that affect the lowest bit that's showing an error.
     error_lsb = lowest_error_bit()
-    search = [(a, b) for a in outputs for b in outputs if a != b and a not in swaps and b not in swaps]
-    search_set = set()
-    for pair in search:
-        s = sorted(pair)
-        search_set.add(s[0] + s[1])
 
     # Check every pair to see if the addition is correct for more bits. If so, add the pair to our swaps list.
-    for pair in sorted(search_set):
-        a = pair[:3]
-        b = pair[3:]
+    for a, b in [(a, b) for a in bit_levels[error_lsb] for b in bit_levels[error_lsb] if a != b]:
         swap(a, b)
         if lowest_error_bit() > error_lsb:
             swaps.add(a)

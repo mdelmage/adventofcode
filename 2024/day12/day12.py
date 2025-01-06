@@ -64,27 +64,24 @@ with open('day12_input.txt') as f:
             garden[(col, row)] = g[row][col]
 
 # Break out the garden into regions.
-# This is a little inefficient, but the fencing calculations are very quick
-# once the regions are set.
 unmapped_plots = [(a, b) for a in range(len(g)) for b in range(len(g[0]))]
 regions = []
 while len(unmapped_plots) > 0:
     plant = garden[unmapped_plots[0]]
     region = set([unmapped_plots[0]])
+    search = set([unmapped_plots[0]])
     del unmapped_plots[0]
-    while True:
-        region_next = []
-        for plot in region:
+    while len(search) > 0:
+        search_next = set()
+        for plot in search:
+            region.add(plot)
             for n in NEIGHBORS:
                 neighbor = (plot[0] + n[0], plot[1] + n[1])
                 if garden.get(neighbor, OFF_MAP) == plant:
                     if neighbor in unmapped_plots:
-                        region_next.append(neighbor)
+                        search_next.add(neighbor)
                         del unmapped_plots[unmapped_plots.index(neighbor)]
-        if len(region_next) > 0:
-            for plot in region_next: region.add(plot)
-        else:
-            break
+        search = search_next
     regions.append(region)
 
 fence_price_part_one = 0
